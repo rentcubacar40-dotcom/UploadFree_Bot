@@ -256,12 +256,31 @@ def onmessage(update,bot:ObigramClient):
                     jdb.create_user(username)
                 user_info = jdb.get_user(username)
                 jdb.save()
-        else:return
-
+        else:
+            return
 
         msgText = ''
-        try: msgText = update.message.text
-        except:pass
+        try: 
+            msgText = update.message.text
+        except: 
+            pass
+
+        # Verificar si es un archivo/documento
+        is_file = False
+        file_info = None
+        
+        try:
+            if update.message.document:
+                is_file = True
+                file_info = update.message.document
+            elif update.message.video:
+                is_file = True  
+                file_info = update.message.video
+            elif update.message.audio:
+                is_file = True
+                file_info = update.message.audio
+        except:
+            pass
 
         # comandos de admin
         if '/adduser' in msgText:
@@ -472,10 +491,32 @@ def onmessage(update,bot:ObigramClient):
         #end
 
         message = bot.sendMessage(update.message.chat.id,'➲ Procesando ✪ ●●○')
-
         thread.store('msg',message)
 
-        if '/start' in msgText:
+        # Procesar archivos subidos
+        if is_file and file_info:
+            try:
+                bot.editMessageText(message,'📥 Descargando archivo...')
+                file_name = file_info.file_name
+                if not file_name:
+                    file_name = f"file_{file_info.file_id}"
+                
+                # Descargar el archivo
+                file_path = bot.download_media(file_info, file_name=file_name)
+                if file_path:
+                    processFile(update, bot, message, file_path, thread=thread, jdb=jdb)
+                else:
+                    bot.editMessageText(message,'➥ Error al descargar el archivo ✗')
+            except Exception as e:
+                bot.editMessageText(message,f'➥ Error procesando archivo: {str(e)}')
+        
+        # Procesar enlaces HTTP
+        elif 'http' in msgText:
+            url = msgText
+            ddl(update,bot,message,url,file_name='',thread=thread,jdb=jdb)
+        
+        # Comandos y otros mensajes
+        elif '/start' in msgText:
             start_msg = 'Bot : ➥ @UploadFreBot Puedo subir a cualquier nube , también puedo descargar ⎙ archivos de ➫ Mega , ➫ Google Drive , ➫ YouTube , ➫ Link directo\n'
             bot.editMessageText(message,start_msg)
         elif '/files' == msgText and user_info['cloudtype']=='moodle':
@@ -543,13 +584,10 @@ def onmessage(update,bot:ObigramClient):
                 bot.editMessageText(message,'Archivo Borrado 🦶')
             else:
                 bot.editMessageText(message,'➲ Error y Causas🧐\n1-Revise su Cuenta\n2-Servidor Desabilitado: '+client.path)       
-        elif 'http' in msgText:
-            url = msgText
-            ddl(update,bot,message,url,file_name='',thread=thread,jdb=jdb)
         else:
             bot.editMessageText(message,'➲ No se pudo procesar ✗ ')
     except Exception as ex:
-           print(str(ex))
+           print(f"Error en onmessage: {str(ex)}")
 
 
 def main():
