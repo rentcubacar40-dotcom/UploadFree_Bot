@@ -233,6 +233,32 @@ def sendTxt(name,files,update,bot):
                 bot.sendFile(update.message.chat.id,name)
                 os.unlink(name)
 
+def download_telegram_file(bot, file_info, dest_path=''):
+    """Descarga archivos de Telegram usando el sistema existente del bot"""
+    try:
+        # Obtener información del archivo
+        file_id = file_info.file_id
+        file_size = file_info.file_size
+        
+        # Obtener información del archivo
+        file = bot.getFile(file_id)
+        
+        # Descargar el archivo
+        file_path = file.file_path
+        downloaded_file = bot.download_file(file_path)
+        
+        # Guardar el archivo localmente
+        file_name = file_info.file_name if hasattr(file_info, 'file_name') else f"file_{file_id}"
+        full_path = os.path.join(dest_path, file_name)
+        
+        with open(full_path, 'wb') as f:
+            f.write(downloaded_file)
+        
+        return full_path
+    except Exception as e:
+        print(f"Error descargando archivo de Telegram: {e}")
+        return None
+
 def onmessage(update,bot:ObigramClient):
     try:
         thread = bot.this_thread
@@ -497,12 +523,10 @@ def onmessage(update,bot:ObigramClient):
         if is_file and file_info:
             try:
                 bot.editMessageText(message,'📥 Descargando archivo...')
-                file_name = file_info.file_name
-                if not file_name:
-                    file_name = f"file_{file_info.file_id}"
                 
-                # Descargar el archivo
-                file_path = bot.download_media(file_info, file_name=file_name)
+                # Descargar el archivo usando el método correcto
+                file_path = download_telegram_file(bot, file_info)
+                
                 if file_path:
                     processFile(update, bot, message, file_path, thread=thread, jdb=jdb)
                 else:
