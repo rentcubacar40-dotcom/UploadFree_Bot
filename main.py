@@ -233,32 +233,6 @@ def sendTxt(name,files,update,bot):
                 bot.sendFile(update.message.chat.id,name)
                 os.unlink(name)
 
-def download_telegram_file(bot, file_info, dest_path=''):
-    """Descarga archivos de Telegram usando el sistema existente del bot"""
-    try:
-        # Obtener información del archivo
-        file_id = file_info.file_id
-        file_size = file_info.file_size
-        
-        # Obtener información del archivo
-        file = bot.getFile(file_id)
-        
-        # Descargar el archivo
-        file_path = file.file_path
-        downloaded_file = bot.download_file(file_path)
-        
-        # Guardar el archivo localmente
-        file_name = file_info.file_name if hasattr(file_info, 'file_name') else f"file_{file_id}"
-        full_path = os.path.join(dest_path, file_name)
-        
-        with open(full_path, 'wb') as f:
-            f.write(downloaded_file)
-        
-        return full_path
-    except Exception as e:
-        print(f"Error descargando archivo de Telegram: {e}")
-        return None
-
 def onmessage(update,bot:ObigramClient):
     try:
         thread = bot.this_thread
@@ -282,31 +256,12 @@ def onmessage(update,bot:ObigramClient):
                     jdb.create_user(username)
                 user_info = jdb.get_user(username)
                 jdb.save()
-        else:
-            return
+        else:return
+
 
         msgText = ''
-        try: 
-            msgText = update.message.text
-        except: 
-            pass
-
-        # Verificar si es un archivo/documento
-        is_file = False
-        file_info = None
-        
-        try:
-            if update.message.document:
-                is_file = True
-                file_info = update.message.document
-            elif update.message.video:
-                is_file = True  
-                file_info = update.message.video
-            elif update.message.audio:
-                is_file = True
-                file_info = update.message.audio
-        except:
-            pass
+        try: msgText = update.message.text
+        except:pass
 
         # comandos de admin
         if '/adduser' in msgText:
@@ -517,30 +472,10 @@ def onmessage(update,bot:ObigramClient):
         #end
 
         message = bot.sendMessage(update.message.chat.id,'➲ Procesando ✪ ●●○')
+
         thread.store('msg',message)
 
-        # Procesar archivos subidos
-        if is_file and file_info:
-            try:
-                bot.editMessageText(message,'📥 Descargando archivo...')
-                
-                # Descargar el archivo usando el método correcto
-                file_path = download_telegram_file(bot, file_info)
-                
-                if file_path:
-                    processFile(update, bot, message, file_path, thread=thread, jdb=jdb)
-                else:
-                    bot.editMessageText(message,'➥ Error al descargar el archivo ✗')
-            except Exception as e:
-                bot.editMessageText(message,f'➥ Error procesando archivo: {str(e)}')
-        
-        # Procesar enlaces HTTP
-        elif 'http' in msgText:
-            url = msgText
-            ddl(update,bot,message,url,file_name='',thread=thread,jdb=jdb)
-        
-        # Comandos y otros mensajes
-        elif '/start' in msgText:
+        if '/start' in msgText:
             start_msg = 'Bot : ➥ @UploadFreBot Puedo subir a cualquier nube , también puedo descargar ⎙ archivos de ➫ Mega , ➫ Google Drive , ➫ YouTube , ➫ Link directo\n'
             bot.editMessageText(message,start_msg)
         elif '/files' == msgText and user_info['cloudtype']=='moodle':
@@ -608,10 +543,13 @@ def onmessage(update,bot:ObigramClient):
                 bot.editMessageText(message,'Archivo Borrado 🦶')
             else:
                 bot.editMessageText(message,'➲ Error y Causas🧐\n1-Revise su Cuenta\n2-Servidor Desabilitado: '+client.path)       
+        elif 'http' in msgText:
+            url = msgText
+            ddl(update,bot,message,url,file_name='',thread=thread,jdb=jdb)
         else:
             bot.editMessageText(message,'➲ No se pudo procesar ✗ ')
     except Exception as ex:
-           print(f"Error en onmessage: {str(ex)}")
+           print(str(ex))
 
 
 def main():
