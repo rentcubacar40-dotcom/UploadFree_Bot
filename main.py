@@ -563,7 +563,7 @@ def main():
     
     # === CÓDIGO NUEVO PARA RENDER - INICIO ===
     # Esto permite que Render detecte la aplicación como activa
-    port = int(os.environ.get("PORT", 8080))
+    port = int(os.environ.get("PORT", 8000))
     
     # Crear un socket simple para mantener el puerto abierto
     import socket
@@ -605,4 +605,5 @@ if __name__ == '__main__':
         main()
     except:
         main()
+
 
